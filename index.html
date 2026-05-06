@@ -3,111 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOOKBOOK | COLLECTION</title>
+    <title>LOOKBOOK</title>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://rawcdn.githack.com/blasten/turn.js/master/turn.min.js"></script>
 
     <style>
-        /* Estetyka Number (N)ine / Avant-Garde */
-        body {
-            background-color: #0d0d0d;
+        /* Całkowity brak tła i marginesów */
+        body, html {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            background: transparent; /* Przezroczyste tło, jeśli używasz iframe */
             overflow: hidden;
-            font-family: 'Courier New', Courier, monospace;
-            color: #555;
         }
 
-        /* Efekt ziarna (Grain) na całości */
+        #flipbook-container {
+            cursor: pointer; /* Kursor sugerujący kliknięcie */
+        }
+
+        #flipbook {
+            margin: 0 auto;
+        }
+
+        #flipbook .page {
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: white; /* Tło samej kartki, jeśli zdjęcie się nie załaduje */
+        }
+
+        /* Opcjonalny efekt ziarna - jeśli go nie chcesz, usuń poniższy blok */
         body::after {
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.1;
+            opacity: 0.05;
             pointer-events: none;
             z-index: 1000;
-        }
-
-        #flipbook-container {
-            width: 90vw;
-            max-width: 1000px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #flipbook {
-            width: 1000px;
-            height: 650px;
-            box-shadow: 0 0 100px rgba(0,0,0,0.9);
-        }
-
-        /* Styl poszczególnych stron */
-        #flipbook .page {
-            width: 100%;
-            height: 100%;
-            background-color: #111;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-
-        /* Nawigacja (Strzałki) */
-        .nav-arrow {
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #333;
-            font-family: 'Courier New', monospace;
-            font-size: 50px;
-            font-weight: 100;
-            cursor: pointer;
-            z-index: 100;
-            transition: all 0.3s ease;
-            padding: 40px;
-            user-select: none;
-            outline: none;
-        }
-
-        .nav-arrow:hover {
-            color: #fff;
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-
-        #prev-btn { left: 10px; }
-        #next-btn { right: 10px; }
-
-        /* Stopka / Info */
-        .footer-info {
-            position: fixed;
-            bottom: 20px;
-            width: 100%;
-            text-align: center;
-            font-size: 10px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            pointer-events: none;
-        }
-
-        /* Responsywność dla mniejszych ekranów */
-        @media (max-width: 1000px) {
-            #flipbook-container { width: 100vw; }
-            .nav-arrow { font-size: 30px; padding: 15px; }
         }
     </style>
 </head>
 <body>
-
-    <button id="prev-btn" class="nav-arrow" onclick="$('#flipbook').turn('previous')"> [ </button>
-    <button id="next-btn" class="nav-arrow" onclick="$('#flipbook').turn('next')"> ] </button>
 
     <div id="flipbook-container">
         <div id="flipbook">
@@ -119,45 +63,56 @@
         </div>
     </div>
 
-    <div class="footer-info">Number (N)ine Aesthetics / Archive Lookbook</div>
-
     <script>
         $(window).ready(function() {
-            // Funkcja dopasowująca rozmiar do ekranu
             function getBookSize() {
                 var width = $(window).width();
                 var height = $(window).height();
                 
-                var bookW = 1000;
-                var bookH = 650;
+                // Skalowanie, by lookbook wypełniał okno, ale trzymał proporcje
+                var ratio = 1000 / 650;
+                var bookW = width;
+                var bookH = width / ratio;
 
-                if (width < 1100) {
-                    bookW = width * 0.9;
-                    bookH = (bookW / 1000) * 650;
+                if (bookH > height) {
+                    bookH = height;
+                    bookW = height * ratio;
                 }
+
                 return { width: bookW, height: bookH };
             }
 
             var size = getBookSize();
 
-            // Inicjalizacja Turn.js
             $("#flipbook").turn({
                 width: size.width,
                 height: size.height,
                 autoCenter: true,
-                duration: 1200, // Prędkość przewracania
+                duration: 1000,
                 gradients: true,
-                acceleration: true,
-                elevation: 50 // Efekt uniesienia kartki przy chwytaniu
+                acceleration: true
             });
 
-            // Obsługa klawiatury (strzałki lewo/prawo)
+            // LOGIKA KLIKNIĘCIA W LEWĄ/PRAWĄ STRONĘ
+            $("#flipbook").bind("vclick", function(event) {
+                var offset = $(this).offset();
+                var relativeX = event.pageX - offset.left;
+                var bookWidth = $(this).width();
+
+                if (relativeX < bookWidth / 2) {
+                    $('#flipbook').turn('previous');
+                } else {
+                    $('#flipbook').turn('next');
+                }
+            });
+
+            // Obsługa klawiatury
             $(window).bind('keydown', function(e) {
                 if (e.keyCode == 37) $('#flipbook').turn('previous');
                 else if (e.keyCode == 39) $('#flipbook').turn('next');
             });
 
-            // Dynamiczna zmiana rozmiaru przy zmianie okna przeglądarki
+            // Responsywność
             $(window).resize(function() {
                 var size = getBookSize();
                 $('#flipbook').turn('size', size.width, size.height);
