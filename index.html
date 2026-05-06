@@ -9,7 +9,6 @@
     <script src="https://rawcdn.githack.com/blasten/turn.js/master/turn.min.js"></script>
 
     <style>
-        /* Całkowity brak tła i marginesów */
         body, html {
             margin: 0;
             padding: 0;
@@ -18,16 +17,18 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: transparent; /* Przezroczyste tło, jeśli używasz iframe */
+            background: transparent;
             overflow: hidden;
         }
 
-        #flipbook-container {
-            cursor: pointer; /* Kursor sugerujący kliknięcie */
-        }
-
-        #flipbook {
-            margin: 0 auto;
+        /* Kontener, który przechwyci kliknięcia nad flipbookiem */
+        #wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         #flipbook .page {
@@ -36,24 +37,28 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            background-color: white; /* Tło samej kartki, jeśli zdjęcie się nie załaduje */
+            background-color: #fff;
         }
 
-        /* Opcjonalny efekt ziarna - jeśli go nie chcesz, usuń poniższy blok */
-        body::after {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.05;
-            pointer-events: none;
-            z-index: 1000;
+        /* Niewidzialne strefy kliknięcia */
+        .click-zone {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 50%;
+            z-index: 999; /* Muszą być nad flipbookiem */
+            cursor: pointer;
         }
+        #left-zone { left: 0; }
+        #right-zone { right: 0; }
     </style>
 </head>
 <body>
 
-    <div id="flipbook-container">
+    <div id="wrapper">
+        <div id="left-zone" class="click-zone"></div>
+        <div id="right-zone" class="click-zone"></div>
+
         <div id="flipbook">
             <div class="page" style="background-image:url('pages/1.png');"></div>
             <div class="page" style="background-image:url('pages/2.png');"></div>
@@ -68,8 +73,6 @@
             function getBookSize() {
                 var width = $(window).width();
                 var height = $(window).height();
-                
-                // Skalowanie, by lookbook wypełniał okno, ale trzymał proporcje
                 var ratio = 1000 / 650;
                 var bookW = width;
                 var bookH = width / ratio;
@@ -78,44 +81,46 @@
                     bookH = height;
                     bookW = height * ratio;
                 }
-
                 return { width: bookW, height: bookH };
             }
 
             var size = getBookSize();
 
-            $("#flipbook").turn({
+            // Inicjalizacja flipbooka
+            var flipbook = $("#flipbook");
+            flipbook.turn({
                 width: size.width,
                 height: size.height,
                 autoCenter: true,
                 duration: 1000,
                 gradients: true,
-                acceleration: true
+                acceleration: true,
+                when: {
+                    turning: function(e, page, view) {
+                        // Można tu dodać dźwięk przewracania
+                    }
+                }
             });
 
-            // LOGIKA KLIKNIĘCIA W LEWĄ/PRAWĄ STRONĘ
-            $("#flipbook").bind("vclick", function(event) {
-                var offset = $(this).offset();
-                var relativeX = event.pageX - offset.left;
-                var bookWidth = $(this).width();
+            // NOWA LOGIKA KLIKNIĘCIA: Przechwytywanie przez przezroczyste divy
+            $('#left-zone').on('click', function() {
+                flipbook.turn('previous');
+            });
 
-                if (relativeX < bookWidth / 2) {
-                    $('#flipbook').turn('previous');
-                } else {
-                    $('#flipbook').turn('next');
-                }
+            $('#right-zone').on('click', function() {
+                flipbook.turn('next');
             });
 
             // Obsługa klawiatury
             $(window).bind('keydown', function(e) {
-                if (e.keyCode == 37) $('#flipbook').turn('previous');
-                else if (e.keyCode == 39) $('#flipbook').turn('next');
+                if (e.keyCode == 37) flipbook.turn('previous');
+                else if (e.keyCode == 39) flipbook.turn('next');
             });
 
-            // Responsywność
+            // Skalowanie przy zmianie rozmiaru okna
             $(window).resize(function() {
                 var size = getBookSize();
-                $('#flipbook').turn('size', size.width, size.height);
+                flipbook.turn('size', size.width, size.height);
             });
         });
     </script>
